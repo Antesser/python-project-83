@@ -26,10 +26,10 @@ jobs:
       - name: Build 👷
         run: npm run build
 
-      - name: Deploy 🚀
-        uses: Antesser/github-pages-deploy-action@3.7.1
-        with:
-          GITHUB_TOKEN: ${{ secrets.THIRD }}
-          BRANCH: gh-pages
-          FOLDER: public
-          CLEAN: true
+      # - name: Deploy 🚀
+      #   uses: Antesser/github-pages-deploy-action@3.7.1
+      #   with:
+      #     GITHUB_TOKEN: ${{ secrets.THIRD }}
+      #     BRANCH: gh-pages
+      #     FOLDER: public
+      #     CLEAN: true
