@@ -1,1 +1,2 @@
-from .app import app  # noqa 401
+from page_analyzer.app import app  # noqa
+__all__ = ('app')
