@@ -3,9 +3,6 @@ name = "hexlet-code"
 version = "0.1.0"
 description = "My third project"
 authors = ["Antesser"]
-packages = [
-  { include = "hexlet-code" },
-]
 
 [tool.poetry.dependencies]
 python = "^3.10"
