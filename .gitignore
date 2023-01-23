@@ -1,5 +1,4 @@
 **/__pycache__
 /dist
-venv/
 .vscode
 .DS_Store

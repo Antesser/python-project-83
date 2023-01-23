@@ -18,6 +18,14 @@ optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 
 [[package]]
+name = "dotenv"
+version = "0.0.5"
+description = "Handle .env files"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "flake8"
 version = "6.0.0"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -101,6 +109,14 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "psycopg2-binary"
+version = "2.9.5"
+description = "psycopg2 - Python-PostgreSQL Database Adapter"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "pycodestyle"
 version = "2.10.0"
 description = "Python style guide checker"
@@ -115,6 +131,17 @@ description = "passive checker of Python programs"
 category = "main"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "python-dotenv"
+version = "0.21.1"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+cli = ["click (>=5.0)"]
 
 [[package]]
 name = "werkzeug"
@@ -133,11 +160,12 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "71348536fd4e124cfcc52c223f0ed007011652b670372edc65f85c0636b45a96"
+content-hash = "8e183e42290704ed51ff4562846760401a214515d498c83192038516ed1714d5"
 
 [metadata.files]
 click = []
 colorama = []
+dotenv = []
 flake8 = []
 flask = []
 gunicorn = []
@@ -145,6 +173,8 @@ itsdangerous = []
 jinja2 = []
 markupsafe = []
 mccabe = []
+psycopg2-binary = []
 pycodestyle = []
 pyflakes = []
+python-dotenv = []
 werkzeug = []
