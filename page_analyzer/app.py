@@ -18,7 +18,7 @@ try:
                 ALWAYS AS IDENTITY, name varchar(255), created_at timestamp)"
         )
 except (Exception, psycopg2.Error) as error:
-    print("Error while connectiong to PostgreSQL", error)
+    print("Error while connecting to PostgreSQL", error)
 finally:
     if conn:
         cursor.close()
