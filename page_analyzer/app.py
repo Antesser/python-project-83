@@ -26,6 +26,7 @@ except (Exception, psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
 finally:
     if conn:
+        conn.commit()
         cursor.close()
         conn.close()
 
