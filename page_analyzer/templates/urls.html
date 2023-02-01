@@ -14,7 +14,7 @@
             <th>Последняя проверка</th>
             <th>Код ответа</th>
           </tr>
-          {% for url in list_of_urls %}
+          {% for url in answer %}
           <tr>
             <td>{{url[0]}}</td>
             <td><a href="{{ url_for('url_id', id=url[0]) }}">{{url[1]}}</a></td>

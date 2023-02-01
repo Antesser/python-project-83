@@ -82,7 +82,7 @@ def urls():
                     result.append(date_tuple)
                 for i, j in zip(list_of_urls, result):
                     answer.append(i+j)
-                return render_template("urls.html", list_of_urls=answer)
+                return render_template("urls.html", answer=answer)
     elif request.method == "POST":
         form = request.form["url"]
         input = urlsplit(form).scheme + "://"\
