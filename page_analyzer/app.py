@@ -60,12 +60,32 @@ def index():
 
 @app.route("/urls", methods=["GET", "POST"])
 def urls():
+    test_id = []
+    url_check_output = []
     if request.method == "GET":
         with psycopg2.connect(url) as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("SELECT * FROM urls ORDER BY id DESC")
+                cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
                 list_of_urls = cursor.fetchall()
-                return render_template("urls.html", list_of_urls=list_of_urls)
+                for i in list_of_urls:
+                    unique_id = i.get("id")
+                    test_id.append(unique_id)
+                for i in test_id:
+                    cursor.execute("select created_at from url_checks\
+                    where url_id=(select max(url_id) from url_checks where\
+                        id=%s)", (i,))
+                    list_of_test_urls = cursor.fetchall()
+                    for i in list_of_test_urls:
+                        url_check_output.append(i)
+                zipped_values = list(zip(list_of_urls, url_check_output))
+                print("zipped_values", zipped_values)
+                for _, result in enumerate(zipped_values):
+                    print("result", result)
+                    for i in result:
+                        print("sdgjds", i)
+
+                return render_template("urls.html", list_of_urls=list_of_urls,
+                                       list_of_test_urls=url_check_output)
     elif request.method == "POST":
         form = request.form["url"]
         input = urlsplit(form).scheme + "://"\
@@ -100,21 +120,6 @@ def urls():
             return redirect(url_for("index"))
 
 
-@app.route("/urls/<id>", methods=["GET", "POST"])
-def url_id(id):
-    messages = get_flashed_messages(with_categories=True)
-    with psycopg2.connect(url) as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT name, created_at FROM urls WHERE id = %s",
-                           (id,))
-            result_urls = cursor.fetchall()
-            for i in result_urls:
-                fetched_url = i.get("name")
-                date = i.get("created_at").strftime("%Y-%m-%d")
-        return render_template("url.html", url=fetched_url, date=date, id=id,
-                               messages=messages)
-
-
 @app.route("/urls/<id>/checks", methods=["POST"])
 def url_id_check(id):
     current_date = datetime.now()
@@ -125,13 +130,27 @@ def url_id_check(id):
                             VALUES (%s,%s)",
                 (id, current_date),
             )
+            flash("Страница успешно проверена", "success")
+            return redirect(url_for("url_id", id=id))
+
+
+@app.route("/urls/<id>", methods=["GET", "POST"])
+def url_id(id):
+    check_date = ""
+    messages = get_flashed_messages(with_categories=True)
+    with psycopg2.connect(url) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT name, created_at FROM urls WHERE id = %s",
+                           (id,))
+            result_urls = cursor.fetchall()
+            for i in result_urls:
+                fetched_url = i.get("name")
+                date = i.get("created_at").strftime("%Y-%m-%d")
             cursor.execute("SELECT url_id, created_at FROM url_checks\
                 WHERE id = %s ORDER BY url_id DESC", (id,))
             test_results = cursor.fetchall()
             for i in test_results:
-                url_id = i.get("url_id")
                 check_date = i.get("created_at").strftime("%Y-%m-%d")
-        flash("Страница успешно проверена", "success")
-        return render_template("url.html", url_id=url_id,
-                               check_date=check_date,
-                               test_results=test_results)
+        return render_template("url.html", url=fetched_url, date=date, id=id,
+                               messages=messages, test_results=test_results,
+                               check_date=check_date)
