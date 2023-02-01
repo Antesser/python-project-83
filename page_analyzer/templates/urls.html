@@ -16,19 +16,16 @@
           </tr>
           {% for url in list_of_urls %}
           <tr>
-            <td>{{url.id}}</td>
-            <td><a href="{{ url_for('url_id', id=url.id) }}">{{url.name}}</a></td>
-            <td>{{url.created_at}}</td>
+            <td>{{url[0]}}</td>
+            <td><a href="{{ url_for('url_id', id=url[0]) }}">{{url[1]}}</a></td>
+            <td>{{url[2]}}</td>
             <td></td>
           </tr>
         </tbody>
         {% endfor %}
       </table>
     </div>
-    {% for url in list_of_test_urls %}
 
-    {{url.created_at}}
-    {%endfor%}
   </div>
 </main>
 {% endblock %}

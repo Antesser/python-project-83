@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages  # noqa(E501)
 from dotenv import load_dotenv
 from datetime import datetime
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import RealDictCursor, NamedTupleCursor
 from urllib.parse import urlsplit
 import psycopg2
 import os
@@ -61,31 +61,28 @@ def index():
 @app.route("/urls", methods=["GET", "POST"])
 def urls():
     test_id = []
-    url_check_output = []
+    result = []
+    answer = []
     if request.method == "GET":
         with psycopg2.connect(url) as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
                 cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
                 list_of_urls = cursor.fetchall()
                 for i in list_of_urls:
-                    unique_id = i.get("id")
+                    unique_id = i.id
                     test_id.append(unique_id)
                 for i in test_id:
                     cursor.execute("select created_at from url_checks\
                     where url_id=(select max(url_id) from url_checks where\
                         id=%s)", (i,))
-                    list_of_test_urls = cursor.fetchall()
-                    for i in list_of_test_urls:
-                        url_check_output.append(i)
-                zipped_values = list(zip(list_of_urls, url_check_output))
-                print("zipped_values", zipped_values)
-                for _, result in enumerate(zipped_values):
-                    print("result", result)
-                    for i in result:
-                        print("sdgjds", i)
-
-                return render_template("urls.html", list_of_urls=list_of_urls,
-                                       list_of_test_urls=url_check_output)
+                    list_of_test_dates = cursor.fetchall()
+                    for i in list_of_test_dates:
+                        check_date = i.created_at.strftime("%Y-%m-%d")
+                        date_tuple = (check_date,)
+                    result.append(date_tuple)
+                for i, j in zip(list_of_urls, result):
+                    answer.append(i+j)
+                return render_template("urls.html", list_of_urls=answer)
     elif request.method == "POST":
         form = request.form["url"]
         input = urlsplit(form).scheme + "://"\
