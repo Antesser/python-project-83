@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 from psycopg2.extras import RealDictCursor, NamedTupleCursor
 from urllib.parse import urlsplit
+from bs4 import BeautifulSoup
 import psycopg2
 import os
 import validators
@@ -122,26 +123,27 @@ def urls():
 @app.route("/urls/<id>/checks", methods=["POST"])
 def url_id_check(id):
     current_date = datetime.now()
-    try:
-        with psycopg2.connect(url) as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(
-                    "SELECT name FROM urls\
-                                WHERE id=%s",
-                    (id,),
-                )
-                url_to_check = cursor.fetchone().get("name")
+    with psycopg2.connect(url) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT name FROM urls\
+                            WHERE id=%s",
+                (id,),
+            )
+            url_to_check = cursor.fetchone().get("name")
+            try:
                 res = requests.get(url_to_check)
-                cursor.execute(
-                    "INSERT INTO url_checks (id, created_at, status_code)\
-                                VALUES (%s,%s,%s)",
-                    (id, current_date, res.status_code),
-                )
-                flash("Страница успешно проверена", "success")
+                res.raise_for_status()
+            except requests.exceptions.ConnectionError:
+                flash("Произошла ошибка при проверке")
                 return redirect(url_for("url_id", id=id))
-    except (Exception, psycopg2.Error):
-        flash("Произошла ошибка при проверке")
-        return redirect(url_for("url_id", id=id))
+            cursor.execute(
+                "INSERT INTO url_checks (id, created_at, status_code)\
+                            VALUES (%s,%s,%s)",
+                (id, current_date, res.status_code),
+            )
+            flash("Страница успешно проверена", "success")
+            return redirect(url_for("url_id", id=id))
 
 
 @app.route("/urls/<id>", methods=["GET"])
