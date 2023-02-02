@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 import psycopg2
 import os
 import validators
+import requests
 
 
 load_dotenv()
@@ -72,13 +73,14 @@ def urls():
                     unique_id = i.id
                     test_id.append(unique_id)
                 for i in test_id:
-                    cursor.execute("select created_at from url_checks\
-                    where url_id=(select max(url_id) from url_checks where\
-                        id=%s)", (i,))
+                    cursor.execute("""SELECT created_at, status_code FROM
+                                   url_checks
+                    WHERE url_id=(SELECT max(url_id) FROM url_checks WHERE\
+                        id=%s)""", (i,))
                     list_of_test_dates = cursor.fetchall()
                     for i in list_of_test_dates:
                         check_date = i.created_at.strftime("%Y-%m-%d")
-                        date_tuple = (check_date,)
+                        date_tuple = (check_date, i.status_code)
                     result.append(date_tuple)
                 for i, j in zip(list_of_urls, result):
                     answer.append(i+j)
@@ -120,18 +122,29 @@ def urls():
 @app.route("/urls/<id>/checks", methods=["POST"])
 def url_id_check(id):
     current_date = datetime.now()
-    with psycopg2.connect(url) as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(
-                "INSERT INTO url_checks (id, created_at)\
-                            VALUES (%s,%s)",
-                (id, current_date),
-            )
-            flash("Страница успешно проверена", "success")
-            return redirect(url_for("url_id", id=id))
+    try:
+        with psycopg2.connect(url) as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(
+                    "SELECT name FROM urls\
+                                WHERE id=%s",
+                    (id,),
+                )
+                url_to_check = cursor.fetchone().get("name")
+                res = requests.get(url_to_check)
+                cursor.execute(
+                    "INSERT INTO url_checks (id, created_at, status_code)\
+                                VALUES (%s,%s,%s)",
+                    (id, current_date, res.status_code),
+                )
+                flash("Страница успешно проверена", "success")
+                return redirect(url_for("url_id", id=id))
+    except (Exception, psycopg2.Error):
+        flash("Произошла ошибка при проверке")
+        return redirect(url_for("url_id", id=id))
 
 
-@app.route("/urls/<id>", methods=["GET", "POST"])
+@app.route("/urls/<id>", methods=["GET"])
 def url_id(id):
     check_date = ""
     messages = get_flashed_messages(with_categories=True)
@@ -143,8 +156,9 @@ def url_id(id):
             for i in result_urls:
                 fetched_url = i.get("name")
                 date = i.get("created_at").strftime("%Y-%m-%d")
-            cursor.execute("SELECT url_id, created_at FROM url_checks\
-                WHERE id = %s ORDER BY url_id DESC", (id,))
+            cursor.execute("""SELECT url_id, status_code, created_at
+                           FROM url_checks
+                WHERE id = %s ORDER BY url_id DESC""", (id,))
             test_results = cursor.fetchall()
             for i in test_results:
                 check_date = i.get("created_at").strftime("%Y-%m-%d")
