@@ -21,8 +21,8 @@ try:
     print("Подключение установлено")
     with conn.cursor() as cursor:
         cursor.execute(
-            "CREATE TABLE IF NOT EXISTS urls (id bigint PRIMARY KEY GENERATED\
-                ALWAYS AS IDENTITY, name varchar(255), created_at timestamp)"
+            """CREATE TABLE IF NOT EXISTS urls (id bigint PRIMARY KEY GENERATED
+                ALWAYS AS IDENTITY, name varchar(255), created_at timestamp)"""
         )
 except (Exception, psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
@@ -38,11 +38,11 @@ try:
     print("Подключение установлено")
     with conn.cursor() as cursor:
         cursor.execute(
-            "CREATE TABLE IF NOT EXISTS url_checks (id bigint,\
-                    url_id bigint GENERATED ALWAYS AS IDENTITY,\
-                        status_code integer, h1 varchar(255),\
-                            title varchar(255), description varchar(255),\
-                                created_at timestamp)"
+            """CREATE TABLE IF NOT EXISTS url_checks (id bigint,
+                    url_id bigint GENERATED ALWAYS AS IDENTITY,
+                        status_code integer, h1 varchar(255),
+                            title varchar(255), description varchar(255),
+                                created_at timestamp)"""
         )
 except (Exception, psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
@@ -65,6 +65,7 @@ def urls():
     test_id = []
     result = []
     answer = []
+    date_tuple = ()
     if request.method == "GET":
         with psycopg2.connect(url) as conn:
             with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
@@ -76,7 +77,7 @@ def urls():
                 for i in test_id:
                     cursor.execute("""SELECT created_at, status_code FROM
                                    url_checks
-                    WHERE url_id=(SELECT max(url_id) FROM url_checks WHERE\
+                    WHERE url_id=(SELECT max(url_id) FROM url_checks WHERE
                         id=%s)""", (i,))
                     list_of_test_dates = cursor.fetchall()
                     for i in list_of_test_dates:
@@ -94,8 +95,8 @@ def urls():
             current_date = datetime.now()
             with psycopg2.connect(url) as conn:
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT id, name FROM urls WHERE\
-                                      name = %s", (input,))
+                    cursor.execute("""SELECT id, name FROM urls WHERE
+                                      name = %s""", (input,))
                     list_of_names = cursor.fetchall()
                     if list_of_names:
                         for i in list_of_names:
@@ -104,8 +105,8 @@ def urls():
                             return redirect(url_for("url_id", id=id))
                     else:
                         cursor.execute(
-                            "INSERT INTO urls (name, created_at)\
-                                        VALUES (%s,%s)",
+                            """INSERT INTO urls (name, created_at)
+                                        VALUES (%s,%s)""",
                             (input, current_date),
                         )
                         cursor.execute(
@@ -122,25 +123,43 @@ def urls():
 
 @app.route("/urls/<id>/checks", methods=["POST"])
 def url_id_check(id):
+    h1 = ""
+    title = ""
+    description = ""
     current_date = datetime.now()
     with psycopg2.connect(url) as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT name FROM urls\
-                            WHERE id=%s",
+                """SELECT name FROM urls WHERE id=%s""",
                 (id,),
             )
             url_to_check = cursor.fetchone().get("name")
             try:
                 res = requests.get(url_to_check)
                 res.raise_for_status()
+                soup = BeautifulSoup(res.text, 'html.parser')
+                try:
+                    h1 = ((soup.find(["h1"])).text).strip()
+                except AttributeError:
+                    h1 = ""
+                try:
+                    title = ((soup.find(["title"])).text).strip()
+                except AttributeError:
+                    title = ""
+                try:
+                    description = (soup.find(
+                        "meta",
+                        {"name": "description"}).attrs["content"]).strip()
+                except AttributeError:
+                    description = ""
             except requests.exceptions.ConnectionError:
                 flash("Произошла ошибка при проверке")
                 return redirect(url_for("url_id", id=id))
             cursor.execute(
-                "INSERT INTO url_checks (id, created_at, status_code)\
-                            VALUES (%s,%s,%s)",
-                (id, current_date, res.status_code),
+                """INSERT INTO url_checks (id, created_at, status_code, h1,
+                        title, description)
+                            VALUES (%s,%s,%s,%s,%s,%s)""",
+                (id, current_date, res.status_code, h1, title, description),
             )
             flash("Страница успешно проверена", "success")
             return redirect(url_for("url_id", id=id))
@@ -148,7 +167,6 @@ def url_id_check(id):
 
 @app.route("/urls/<id>", methods=["GET"])
 def url_id(id):
-    check_date = ""
     messages = get_flashed_messages(with_categories=True)
     with psycopg2.connect(url) as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -158,12 +176,11 @@ def url_id(id):
             for i in result_urls:
                 fetched_url = i.get("name")
                 date = i.get("created_at").strftime("%Y-%m-%d")
-            cursor.execute("""SELECT url_id, status_code, created_at
-                           FROM url_checks
-                WHERE id = %s ORDER BY url_id DESC""", (id,))
+            cursor.execute("""SELECT url_id, status_code, created_at, h1,
+                           title, description FROM url_checks
+                            WHERE id = %s ORDER BY url_id DESC""", (id,))
             test_results = cursor.fetchall()
             for i in test_results:
-                check_date = i.get("created_at").strftime("%Y-%m-%d")
+                i["created_at"] = i.get("created_at").strftime("%Y-%m-%d")
         return render_template("url.html", url=fetched_url, date=date, id=id,
-                               messages=messages, test_results=test_results,
-                               check_date=check_date)
+                               messages=messages, test_results=test_results)
