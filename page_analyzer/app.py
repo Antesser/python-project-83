@@ -118,7 +118,6 @@ def urls():
                         return redirect(url_for("url_id", id=id))
         else:
             flash("Некорректный URL", "error")
-            return redirect(url_for("index"))
 
 
 @app.route("/urls/<id>/checks", methods=["POST"])
@@ -137,9 +136,6 @@ def url_id_check(id):
             try:
                 res = requests.get(url_to_check)
                 res.raise_for_status()
-                # if res.status_code != 200:
-                #     flash("херота")
-                #     return redirect(url_for("url_id", id=id))
                 soup = BeautifulSoup(res.text, 'html.parser')
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
