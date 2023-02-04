@@ -134,12 +134,9 @@ def url_id_check(id):
                 (id,),
             )
             url_to_check = cursor.fetchone().get("name")
-            print("url_to_check", url_to_check)
             try:
                 res = requests.get(url_to_check)
-                print("res", res)
                 res.raise_for_status()
-                print("res.status_code,",res.status_code)
                 if res.status_code != 200:
                     flash("херота")
                     return redirect(url_for("url_id", id=id))
@@ -159,9 +156,9 @@ def url_id_check(id):
                         {"name": "description"}).attrs["content"]).strip()
                 except AttributeError:
                     description = ""
-            except requests.exceptions.ConnectionError:
+            except requests.exceptions.RequestException:
                 flash("Произошла ошибка при проверке")
-                # return redirect(url_for("url_id", id=id))
+                return redirect(url_for("url_id", id=id))
             cursor.execute(
                 """INSERT INTO url_checks (id, created_at, status_code, h1,
                         title, description)
