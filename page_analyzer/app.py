@@ -137,6 +137,9 @@ def url_id_check(id):
             try:
                 res = requests.get(url_to_check)
                 res.raise_for_status()
+                if not res.status_code // 100 == 2:
+                    flash("Произошла ошибка при проверке")
+                    return redirect(url_for("url_id", id=id))
                 soup = BeautifulSoup(res.text, 'html.parser')
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
