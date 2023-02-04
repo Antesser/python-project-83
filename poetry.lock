@@ -195,9 +195,6 @@ python-versions = ">=3.4"
 [package.dependencies]
 decorator = ">=3.4.0"
 
-[package.extras]
-test = ["pytest (>=2.2.3)", "flake8 (>=2.4.0)", "isort (>=4.2.2)"]
-
 [[package]]
 name = "werkzeug"
 version = "2.2.2"
