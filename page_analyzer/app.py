@@ -139,10 +139,10 @@ def url_id_check(id):
                 res.raise_for_status()
                 if not res.status_code // 100 == 2:
                     flash("Произошла ошибка при проверке")
-                    return redirect(url_for("url_id", id=id))
                 soup = BeautifulSoup(res.text, 'html.parser')
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
+                    print("h1=", h1)
                 except AttributeError:
                     h1 = ""
                 try:
