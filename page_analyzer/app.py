@@ -119,7 +119,7 @@ def urls():
         else:
             flash("Некорректный URL", "error")
             messages = get_flashed_messages(with_categories=True)
-            return render_template("index.html", messages=messages)
+            return render_template("index.html", messages=messages), 422
 
 
 @app.route("/urls/<id>/checks", methods=["POST"])
