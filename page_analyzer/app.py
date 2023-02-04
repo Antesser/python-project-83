@@ -69,7 +69,8 @@ def urls():
     if request.method == "GET":
         with psycopg2.connect(url) as conn:
             with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
-                cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
+                cursor.execute("""SELECT id, name FROM urls
+                               ORDER BY id DESC""")
                 list_of_urls = cursor.fetchall()
                 for i in list_of_urls:
                     unique_id = i.id
