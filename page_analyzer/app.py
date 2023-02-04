@@ -134,11 +134,15 @@ def url_id_check(id):
                 (id,),
             )
             url_to_check = cursor.fetchone().get("name")
+            print("url_to_check", url_to_check)
             try:
                 res = requests.get(url_to_check)
+                print("res", res)
                 res.raise_for_status()
-                if not res.status_code // 100 == 2:
-                    flash("Произошла ошибка при проверке")
+                print("res.status_code,",res.status_code)
+                if res.status_code != 200:
+                    flash("херота")
+                    return redirect(url_for("url_id", id=id))
                 soup = BeautifulSoup(res.text, 'html.parser')
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
@@ -157,7 +161,7 @@ def url_id_check(id):
                     description = ""
             except requests.exceptions.ConnectionError:
                 flash("Произошла ошибка при проверке")
-                return redirect(url_for("url_id", id=id))
+                # return redirect(url_for("url_id", id=id))
             cursor.execute(
                 """INSERT INTO url_checks (id, created_at, status_code, h1,
                         title, description)
