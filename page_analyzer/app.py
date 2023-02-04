@@ -118,6 +118,8 @@ def urls():
                         return redirect(url_for("url_id", id=id))
         else:
             flash("Некорректный URL", "error")
+            messages = get_flashed_messages(with_categories=True)
+            return render_template("index.html", messages=messages)
 
 
 @app.route("/urls/<id>/checks", methods=["POST"])
