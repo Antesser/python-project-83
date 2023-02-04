@@ -85,7 +85,7 @@ def urls():
                         date_tuple = (check_date, i.status_code)
                     result.append(date_tuple)
                 for i, j in zip(list_of_urls, result):
-                    answer.append(i+j)
+                    answer.append(i + j)
                 return render_template("urls.html", answer=answer)
     elif request.method == "POST":
         form = request.form["url"]
