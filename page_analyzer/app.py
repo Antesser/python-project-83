@@ -66,13 +66,11 @@ def urls_get():
         with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
             cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
             list_of_urls = cursor.fetchall()
-            print("list", list_of_urls)
             cursor.execute("""SELECT date(created_at), status_code
                            FROM url_checks WHERE id IN (SELECT MAX(id)
                            FROM url_checks GROUP BY url_id)
                            ORDER BY id DESC""")
             list_of_test_dates = cursor.fetchall()
-            print("list_of_test_dates", list_of_test_dates)
             result = list(zip_longest(list_of_urls, list_of_test_dates,
                                       fillvalue=()))
             for i, j in result:
