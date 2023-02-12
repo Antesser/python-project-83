@@ -1,13 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if messages %}
-<ul class=flashes>
-  {% for category, message in messages %}
-  <p class="{{ category }}" style="background:#4cabd66e">{{ message }}</p>
-  {% endfor %}
-</ul>
-{% endif %}
+
 <main class="flex-grow-1">
   <div class="container-lg mt-3">
     <h1></h1>

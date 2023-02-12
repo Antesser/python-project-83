@@ -24,12 +24,11 @@ try:
             """CREATE TABLE IF NOT EXISTS urls (id bigint PRIMARY KEY GENERATED
                 ALWAYS AS IDENTITY, name varchar(255), created_at timestamp)"""
         )
-except (Exception, psycopg2.Error) as error:
+except (requests.exceptions.ConnectionError(), psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
 finally:
     if conn:
         conn.commit()
-        cursor.close()
         conn.close()
 
 
@@ -44,82 +43,86 @@ try:
                             title varchar(255), description varchar(255),
                                 created_at timestamp)"""
         )
-except (Exception, psycopg2.Error) as error:
+except (requests.exceptions.ConnectionError(), psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
 finally:
     if conn:
         conn.commit()
-        cursor.close()
         conn.close()
 
 
 @app.route("/")
 def index():
     messages = get_flashed_messages(with_categories=True)
-    print(messages)
     return render_template("index.html", messages=messages)
 
 
-@app.route("/urls", methods=["GET", "POST"])
-def urls():
+@app.route("/urls", methods=["GET"])
+def urls_get():
+
     test_id = []
     result = []
     answer = []
     date_tuple = ()
-    if request.method == "GET":
+
+    with psycopg2.connect(url) as conn:
+        with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
+            cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
+            list_of_urls = cursor.fetchall()
+            print("list_of_urls",list_of_urls)
+            for i in list_of_urls:
+                unique_id = i.id
+                test_id.append(unique_id)
+            print("test_id", test_id)
+            for i in test_id:
+                cursor.execute("""SELECT created_at, status_code FROM
+                                url_checks
+                WHERE url_id=(SELECT max(url_id) FROM url_checks WHERE
+                    id=%s)""", (i,))
+                list_of_test_dates = cursor.fetchall()
+                print("list_of_test_dates", list_of_test_dates)
+                for i in list_of_test_dates:
+                    check_date = i.created_at.strftime("%Y-%m-%d")
+                    date_tuple = (check_date, i.status_code)
+                result.append(date_tuple)
+            for i, j in zip(list_of_urls, result):
+                answer.append(i + j)
+            return render_template("urls.html", answer=answer)
+
+
+def validate(form):
+    return urlsplit(form).scheme + "://"\
+        + urlsplit(form).netloc
+
+
+@app.route("/urls", methods=["POST"])
+def urls_post():
+    form = request.form["url"]
+    input = validate(form)
+    if not validators.url(input):
+        flash("Некорректный URL", "error")
+        messages = get_flashed_messages(with_categories=True)
+        return render_template("index.html", messages=messages), 422
+    else:
+        current_date = datetime.now()
         with psycopg2.connect(url) as conn:
-            with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
-                cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
-                list_of_urls = cursor.fetchall()
-                for i in list_of_urls:
-                    unique_id = i.id
-                    test_id.append(unique_id)
-                for i in test_id:
-                    cursor.execute("""SELECT created_at, status_code FROM
-                                   url_checks
-                    WHERE url_id=(SELECT max(url_id) FROM url_checks WHERE
-                        id=%s)""", (i,))
-                    list_of_test_dates = cursor.fetchall()
-                    for i in list_of_test_dates:
-                        check_date = i.created_at.strftime("%Y-%m-%d")
-                        date_tuple = (check_date, i.status_code)
-                    result.append(date_tuple)
-                for i, j in zip(list_of_urls, result):
-                    answer.append(i + j)
-                return render_template("urls.html", answer=answer)
-    elif request.method == "POST":
-        form = request.form["url"]
-        input = urlsplit(form).scheme + "://"\
-            + urlsplit(form).netloc
-        if validators.url(input):
-            current_date = datetime.now()
-            with psycopg2.connect(url) as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute("""SELECT id, name FROM urls WHERE
-                                      name = %s""", (input,))
-                    list_of_names = cursor.fetchall()
-                    if list_of_names:
-                        for i in list_of_names:
-                            id = i[0]
-                            flash("Страница уже существует", "warning")
-                            return redirect(url_for("url_id", id=id))
-                    else:
-                        cursor.execute(
-                            """INSERT INTO urls (name, created_at)
-                                        VALUES (%s,%s)""",
-                            (input, current_date),
-                        )
-                        cursor.execute(
-                            "SELECT id FROM urls WHERE created_at = %s",
-                            (current_date,)
-                        )
-                        id = cursor.fetchone()[0]
-                        flash("Страница успешно добавлена", "success")
-                        return redirect(url_for("url_id", id=id))
-        else:
-            flash("Некорректный URL", "error")
-            messages = get_flashed_messages(with_categories=True)
-            return render_template("index.html", messages=messages), 422
+            with conn.cursor() as cursor:
+                cursor.execute("""SELECT id, name FROM urls WHERE
+                                    name = %s""", (input,))
+                list_of_names = cursor.fetchone()
+                if list_of_names:
+                    id = list_of_names[0]
+                    flash("Страница уже существует", "warning")
+                    return redirect(url_for("url_id", id=id))
+                else:
+                    cursor.execute(
+                        """INSERT INTO urls (name, created_at)
+                                    VALUES (%s,%s) RETURNING id""",
+                        (input, current_date),
+                    )
+                    id = cursor.fetchone()[0]
+                    flash("Страница успешно добавлена", "success")
+                    return redirect(url_for("url_id", id=id))
 
 
 @app.route("/urls/<id>/checks", methods=["POST"])
@@ -141,7 +144,6 @@ def url_id_check(id):
                 soup = BeautifulSoup(res.text, 'html.parser')
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
-                    print("h1=", h1)
                 except AttributeError:
                     h1 = ""
                 try:
@@ -174,10 +176,9 @@ def url_id(id):
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT name, created_at FROM urls WHERE id = %s",
                            (id,))
-            result_urls = cursor.fetchall()
-            for i in result_urls:
-                fetched_url = i.get("name")
-                date = i.get("created_at").strftime("%Y-%m-%d")
+            result_urls = cursor.fetchone()
+            fetched_url = result_urls.get("name")
+            date = result_urls.get("created_at").strftime("%Y-%m-%d")
             cursor.execute("""SELECT url_id, status_code, created_at, h1,
                            title, description FROM url_checks
                             WHERE id = %s ORDER BY url_id DESC""", (id,))

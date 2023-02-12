@@ -5,3 +5,5 @@ dev:
 	poetry run flask --app page_analyzer:app run
 debug:
 	poetry run flask --app page_analyzer:app --debug run
+lint:
+	poetry run flake8
