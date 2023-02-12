@@ -126,29 +126,22 @@ def url_id_check(id):
                 (id,),
             )
             url_to_check = cursor.fetchone().get("name")
-            print("url_to_check", url_to_check)
             try:
                 res = requests.get(url_to_check)
-                print("res", res)
                 res.raise_for_status()
-                print("status", res.raise_for_status())
                 soup = BeautifulSoup(res.text, 'html.parser')
-                print("soup", soup)
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
-                    print("h1",h1)
                 except AttributeError:
                     h1 = ""
                 try:
                     title = ((soup.find(["title"])).text).strip()
-                    print("title",title)
                 except AttributeError:
                     title = ""
                 try:
                     description = (soup.find(
                         "meta",
                         {"name": "description"}).attrs["content"]).strip()
-                    print("description", description)
                 except AttributeError:
                     description = ""
             except requests.exceptions.RequestException:
