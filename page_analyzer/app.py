@@ -15,9 +15,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
-url = os.getenv("DATABASE_URL")
+URL = os.getenv("DATABASE_URL")
 try:
-    conn = psycopg2.connect(url)
+    conn = psycopg2.connect(URL)
     print("Подключение установлено")
     with conn.cursor() as cursor:
         cursor.execute(
@@ -33,12 +33,13 @@ finally:
 
 
 try:
-    conn = psycopg2.connect(url)
+    conn = psycopg2.connect(URL)
     print("Подключение установлено")
     with conn.cursor() as cursor:
         cursor.execute(
-            """CREATE TABLE IF NOT EXISTS url_checks (id bigint,
-                    url_id bigint GENERATED ALWAYS AS IDENTITY,
+            """CREATE TABLE IF NOT EXISTS url_checks (id bigint PRIMARY KEY
+                GENERATED ALWAYS AS IDENTITY,
+                    url_id bigint,
                         status_code integer, h1 varchar(255),
                             title varchar(255), description varchar(255),
                                 created_at timestamp)"""
@@ -59,33 +60,18 @@ def index():
 
 @app.route("/urls", methods=["GET"])
 def urls_get():
-
-    test_id = []
-    result = []
     answer = []
-    date_tuple = ()
-
-    with psycopg2.connect(url) as conn:
+    with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
             cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
             list_of_urls = cursor.fetchall()
-            print("list_of_urls", list_of_urls)
-            for i in list_of_urls:
-                unique_id = i.id
-                test_id.append(unique_id)
-            print("test_id", test_id)
-            for i in test_id:
-                cursor.execute("""SELECT created_at, status_code FROM
-                                url_checks
-                WHERE url_id=(SELECT max(url_id) FROM url_checks WHERE
-                    id=%s)""", (i,))
-                list_of_test_dates = cursor.fetchall()
-                print("list_of_test_dates", list_of_test_dates)
-                for i in list_of_test_dates:
-                    check_date = i.created_at.strftime("%Y-%m-%d")
-                    date_tuple = (check_date, i.status_code)
-                result.append(date_tuple)
-            for i, j in zip(list_of_urls, result):
+            cursor.execute("""SELECT created_at, status_code FROM
+                           (SELECT url_id, id, created_at, status_code,
+                           max(id) OVER (PARTITION BY url_id) max_id
+                           FROM url_checks) t WHERE id=max_id
+                           ORDER BY url_id DESC""")
+            list_of_test_dates = cursor.fetchall()
+            for i, j in zip(list_of_urls, list_of_test_dates):
                 answer.append(i + j)
             return render_template("urls.html", answer=answer)
 
@@ -103,26 +89,26 @@ def urls_post():
         flash("Некорректный URL", "error")
         messages = get_flashed_messages(with_categories=True)
         return render_template("index.html", messages=messages), 422
-    else:
-        current_date = datetime.now()
-        with psycopg2.connect(url) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""SELECT id, name FROM urls WHERE
-                                    name = %s""", (input,))
-                list_of_names = cursor.fetchone()
-                if list_of_names:
-                    id = list_of_names[0]
-                    flash("Страница уже существует", "warning")
-                    return redirect(url_for("url_id", id=id))
-                else:
-                    cursor.execute(
-                        """INSERT INTO urls (name, created_at)
-                                    VALUES (%s,%s) RETURNING id""",
-                        (input, current_date),
-                    )
-                    id = cursor.fetchone()[0]
-                    flash("Страница успешно добавлена", "success")
-                    return redirect(url_for("url_id", id=id))
+
+    current_date = datetime.now()
+    with psycopg2.connect(URL) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""SELECT id, name FROM urls WHERE
+                                name = %s""", (input,))
+            list_of_names = cursor.fetchone()
+            if list_of_names:
+                id = list_of_names[0]
+                flash("Страница уже существует", "warning")
+                return redirect(url_for("url_id", id=id))
+            else:
+                cursor.execute(
+                    """INSERT INTO urls (name, created_at)
+                                VALUES (%s,%s) RETURNING id""",
+                    (input, current_date),
+                )
+                id = cursor.fetchone()[0]
+                flash("Страница успешно добавлена", "success")
+                return redirect(url_for("url_id", id=id))
 
 
 @app.route("/urls/<id>/checks", methods=["POST"])
@@ -131,7 +117,7 @@ def url_id_check(id):
     title = ""
     description = ""
     current_date = datetime.now()
-    with psycopg2.connect(url) as conn:
+    with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
                 """SELECT name FROM urls WHERE id=%s""",
@@ -160,7 +146,7 @@ def url_id_check(id):
                 flash("Произошла ошибка при проверке")
                 return redirect(url_for("url_id", id=id))
             cursor.execute(
-                """INSERT INTO url_checks (id, created_at, status_code, h1,
+                """INSERT INTO url_checks (url_id, created_at, status_code, h1,
                         title, description)
                             VALUES (%s,%s,%s,%s,%s,%s)""",
                 (id, current_date, res.status_code, h1, title, description),
@@ -172,16 +158,16 @@ def url_id_check(id):
 @app.route("/urls/<id>", methods=["GET"])
 def url_id(id):
     messages = get_flashed_messages(with_categories=True)
-    with psycopg2.connect(url) as conn:
+    with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT name, created_at FROM urls WHERE id = %s",
                            (id,))
             result_urls = cursor.fetchone()
             fetched_url = result_urls.get("name")
             date = result_urls.get("created_at").strftime("%Y-%m-%d")
-            cursor.execute("""SELECT url_id, status_code, created_at, h1,
+            cursor.execute("""SELECT id, status_code, created_at, h1,
                            title, description FROM url_checks
-                            WHERE id = %s ORDER BY url_id DESC""", (id,))
+                            WHERE url_id = %s ORDER BY id DESC""", (id,))
             test_results = cursor.fetchall()
             for i in test_results:
                 i["created_at"] = i.get("created_at").strftime("%Y-%m-%d")

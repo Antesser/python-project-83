@@ -57,6 +57,19 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "flake8"
+version = "6.0.0"
+description = "the modular source code checker: pep8 pyflakes and co"
+category = "dev"
+optional = false
+python-versions = ">=3.8.1"
+
+[package.dependencies]
+mccabe = ">=0.7.0,<0.8.0"
+pycodestyle = ">=2.10.0,<2.11.0"
+pyflakes = ">=3.0.0,<3.1.0"
+
+[[package]]
 name = "flask"
 version = "2.2.2"
 description = "A simple framework for building complex web applications."
@@ -127,10 +140,34 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "mccabe"
+version = "0.7.0"
+description = "McCabe checker, plugin for flake8"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.9.5"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
 category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
+name = "pycodestyle"
+version = "2.10.0"
+description = "Python style guide checker"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
+name = "pyflakes"
+version = "3.0.1"
+description = "passive checker of Python programs"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -215,7 +252,7 @@ watchdog = ["watchdog"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "8a9974fa2a53e84a36ac3bfdf883b8514b688d4721e75a8ecb303de33865f142"
+content-hash = "f2cfae30084db81ccf7f95b45442eb4703be50418cf9ab659d28f44b907fe847"
 
 [metadata.files]
 beautifulsoup4 = []
@@ -224,13 +261,17 @@ charset-normalizer = []
 click = []
 colorama = []
 decorator = []
+flake8 = []
 flask = []
 gunicorn = []
 idna = []
 itsdangerous = []
 jinja2 = []
 markupsafe = []
+mccabe = []
 psycopg2-binary = []
+pycodestyle = []
+pyflakes = []
 python-dotenv = []
 requests = []
 soupsieve = []
