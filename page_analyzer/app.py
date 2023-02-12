@@ -64,18 +64,18 @@ def urls_get():
     answer = []
     with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
-            cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
+            cursor.execute("SELECT id, name FROM urls ORDER BY id")
             list_of_urls = cursor.fetchall()
             cursor.execute("""SELECT date(created_at), status_code
                            FROM url_checks WHERE id IN (SELECT MAX(id)
                            FROM url_checks GROUP BY url_id)
-                           ORDER BY id DESC""")
+                           ORDER BY url_id""")
             list_of_test_dates = cursor.fetchall()
             result = list(zip_longest(list_of_urls, list_of_test_dates,
                                       fillvalue=()))
             for i, j in result:
                 answer.append(i+j)
-            return render_template("urls.html", answer=answer)
+            return render_template("urls.html", answer=answer[::-1])
 
 
 def validate(form):
