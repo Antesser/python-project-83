@@ -4,6 +4,7 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor, NamedTupleCursor
 from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
+from itertools import zip_longest
 import psycopg2
 import os
 import validators
@@ -65,14 +66,17 @@ def urls_get():
         with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
             cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
             list_of_urls = cursor.fetchall()
-            cursor.execute("""SELECT created_at, status_code FROM
-                           (SELECT url_id, id, created_at, status_code,
-                           max(id) OVER (PARTITION BY url_id) max_id
-                           FROM url_checks) t WHERE id=max_id
-                           ORDER BY url_id DESC""")
+            print("list", list_of_urls)
+            cursor.execute("""SELECT date(created_at), status_code
+                           FROM url_checks WHERE id IN (SELECT MAX(id)
+                           FROM url_checks GROUP BY url_id)
+                           ORDER BY id DESC""")
             list_of_test_dates = cursor.fetchall()
-            for i, j in zip(list_of_urls, list_of_test_dates):
-                answer.append(i + j)
+            print("list_of_test_dates", list_of_test_dates)
+            result = list(zip_longest(list_of_urls, list_of_test_dates,
+                                      fillvalue=()))
+            for i, j in result:
+                answer.append(i+j)
             return render_template("urls.html", answer=answer)
 
 
@@ -124,22 +128,29 @@ def url_id_check(id):
                 (id,),
             )
             url_to_check = cursor.fetchone().get("name")
+            print("url_to_check", url_to_check)
             try:
                 res = requests.get(url_to_check)
+                print("res", res)
                 res.raise_for_status()
+                print("status", res.raise_for_status())
                 soup = BeautifulSoup(res.text, 'html.parser')
+                print("soup", soup)
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
+                    print("h1",h1)
                 except AttributeError:
                     h1 = ""
                 try:
                     title = ((soup.find(["title"])).text).strip()
+                    print("title",title)
                 except AttributeError:
                     title = ""
                 try:
                     description = (soup.find(
                         "meta",
                         {"name": "description"}).attrs["content"]).strip()
+                    print("description", description)
                 except AttributeError:
                     description = ""
             except requests.exceptions.RequestException:
