@@ -69,7 +69,7 @@ def urls_get():
         with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
             cursor.execute("SELECT id, name FROM urls ORDER BY id DESC")
             list_of_urls = cursor.fetchall()
-            print("list_of_urls",list_of_urls)
+            print("list_of_urls", list_of_urls)
             for i in list_of_urls:
                 unique_id = i.id
                 test_id.append(unique_id)
