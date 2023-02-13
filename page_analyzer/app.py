@@ -129,14 +129,14 @@ def url_id_check(id):
             try:
                 res = requests.get(url_to_check)
                 res.raise_for_status()
-                soup = BeautifulSoup(res.content, 'html.parser')
+                soup = BeautifulSoup(res.text, 'html.parser')
                 print("soup", soup)
                 try:
-                    h1 = ((soup.find(["h1"])).content).strip()
+                    h1 = ((soup.find(["h1"])).text).strip()
                 except AttributeError:
                     h1 = ""
                 try:
-                    title = ((soup.find(["title"])).content).strip()
+                    title = ((soup.find(["title"])).text).strip()
                 except AttributeError:
                     title = ""
                 try:
