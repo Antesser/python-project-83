@@ -8,4 +8,5 @@
 
 <head>
 <meta http-equiv="refresh" content="0;URL=python-project-83-production-2c02.up.railway.app" />
+<title>Приложение</title>
 </head>
