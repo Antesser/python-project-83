@@ -125,7 +125,6 @@ def url_id_check(id):
                 res = requests.get(url_to_check)
                 res.raise_for_status()
                 soup = BeautifulSoup(res.text, 'html.parser')
-                print("soup", soup)
                 try:
                     h1 = ((soup.find(["h1"])).text).strip()
                 except AttributeError:
