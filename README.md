@@ -6,7 +6,4 @@
 Анализатор страниц – полноценное приложение на базе фреймворка Flask. Здесь отрабатываются базовые принципы построения современных сайтов на MVC-архитектуре: работа с роутингом, обработчиками запросов и шаблонизатором, взаимодействие с базой данных.
 
 
-<head>
-<meta http-equiv="refresh" content="0;URL=python-project-83-production-2c02.up.railway.app" />
-<title>Приложение</title>
-</head>
+<input type="button" value="Приложение" onClick='location.href="python-project-83-production-2c02.up.railway.app"'>
