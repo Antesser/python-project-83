@@ -7,3 +7,5 @@ debug:
 	poetry run flask --app page_analyzer:app --debug run
 lint:
 	poetry run flake8
+install:
+	poetry install	
