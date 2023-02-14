@@ -18,8 +18,8 @@
           <tr>
             <td>{{url[0]}}</td>
             <td><a href="{{ url_for('url_id', id=url[0]) }}">{{url[1]}}</a></td>
-            <td>{{url[2]}}</td>
-            <td>{{url[3]}}</td>
+            <td>{{url[2] or ""}}</td>
+            <td>{{url[3] or ""}}</td>
           </tr>
         </tbody>
         {% endfor %}
