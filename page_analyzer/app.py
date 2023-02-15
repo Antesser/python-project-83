@@ -20,8 +20,9 @@ URL = os.getenv("DATABASE_URL")
 
 
 with open("database.sql", "r") as db:
-    for urls, url_checks in zip_longest(*[db]*2):
-        urls, url_checks = urls, url_checks
+    for urls in db:
+        urls = urls
+        url_checks = next(db, None)
 
 try:
     conn = psycopg2.connect(URL)
