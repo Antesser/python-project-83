@@ -9,19 +9,21 @@
     <div class="table-responsive">
       <table class="table table-bordered table-hover text-nowrap" data-test="url">
         <tbody>
+          {% for result_url in result_urls %}
           <tr>
             <td>ID</td>
             <td>{{id}}</td>
           </tr>
           <tr>
             <td>Имя</td>
-            <td>{{url}}</td>
+            <td>{{result_url.name}}</td>
           </tr>
           <tr>
             <td>Дата создания</td>
-            <td>{{date}}</td>
+            <td>{{result_url.date}}</td>
           </tr>
         </tbody>
+        {% endfor %}
       </table>
     </div>
 
@@ -46,10 +48,10 @@
           <tr>
             <td>{{test_url.id}}</td>
             <td>{{test_url.status_code}}</td>
-            <td>{{test_url.h1 or ""}}</td>
-            <td>{{test_url.title or ""}}</td>
-            <td>{{test_url.description or ""}}</td>
-            <td>{{test_url.created_at}}</td>
+            <td>{{test_url.h1}}</td>
+            <td>{{test_url.title}}</td>
+            <td>{{test_url.description}}</td>
+            <td>{{test_url.date}}</td>
           </tr>
         </tbody>
         {% endfor %}

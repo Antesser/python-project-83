@@ -140,15 +140,12 @@ def url_id(id):
     messages = get_flashed_messages(with_categories=True)
     with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT name, created_at FROM urls WHERE id = %s",
-                           (id,))
-            result_urls = cursor.fetchone()
-            fetched_url = result_urls.get("name")
-            date = result_urls.get("created_at")
-            print("date", date, type(date))
-            cursor.execute("""SELECT id, status_code, created_at, h1,
+            cursor.execute("""SELECT name, date(created_at)
+                           FROM urls WHERE id = %s""", (id,))
+            result_urls = cursor.fetchall()
+            cursor.execute("""SELECT id, status_code, date(created_at), h1,
                            title, description FROM url_checks
                             WHERE url_id = %s ORDER BY id DESC""", (id,))
             test_results = cursor.fetchall()
-        return render_template("url.html", url=fetched_url, date=date, id=id,
+        return render_template("url.html", id=id, result_urls=result_urls,
                                messages=messages, test_results=test_results)
