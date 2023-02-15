@@ -4,6 +4,7 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor, NamedTupleCursor
 from .validator import validate
 from bs4 import BeautifulSoup
+from itertools import zip_longest
 import psycopg2
 import os
 import validators
@@ -16,21 +17,18 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
 
 URL = os.getenv("DATABASE_URL")
+
+
+with open("database.sql", "r") as db:
+    for urls, url_checks in zip_longest(*[db]*2):
+        urls, url_checks = urls, url_checks
+
 try:
     conn = psycopg2.connect(URL)
     print("Подключение установлено")
     with conn.cursor() as cursor:
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS urls (id bigint PRIMARY KEY GENERATED
-                ALWAYS AS IDENTITY, name varchar(255), created_at timestamp)"""
-        )
-        cursor.execute(
-            """CREATE TABLE IF NOT EXISTS url_checks (id bigint PRIMARY KEY
-                GENERATED ALWAYS AS IDENTITY,
-                    url_id bigint, status_code integer, h1 varchar(255),
-                            title varchar(255), description varchar(255),
-                                created_at timestamp)"""
-        )
+        cursor.execute(urls)
+        cursor.execute(url_checks)
 except (requests.exceptions.ConnectionError(), psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
 finally:
