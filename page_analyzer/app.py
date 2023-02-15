@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, get
 from dotenv import load_dotenv
 from datetime import datetime
 from psycopg2.extras import RealDictCursor, NamedTupleCursor
-from urllib.parse import urlsplit
+from .validator import validate
 from bs4 import BeautifulSoup
 import psycopg2
 import os
@@ -24,18 +24,6 @@ try:
             """CREATE TABLE IF NOT EXISTS urls (id bigint PRIMARY KEY GENERATED
                 ALWAYS AS IDENTITY, name varchar(255), created_at timestamp)"""
         )
-except (requests.exceptions.ConnectionError(), psycopg2.Error) as error:
-    print("Error while connecting to PostgreSQL", error)
-finally:
-    if conn:
-        conn.commit()
-        conn.close()
-
-
-try:
-    conn = psycopg2.connect(URL)
-    print("Подключение установлено")
-    with conn.cursor() as cursor:
         cursor.execute(
             """CREATE TABLE IF NOT EXISTS url_checks (id bigint PRIMARY KEY
                 GENERATED ALWAYS AS IDENTITY,
@@ -60,22 +48,19 @@ def index():
 
 @app.route("/urls", methods=["GET"])
 def urls_get():
-    answer = []
     with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cursor:
-            cursor.execute("""SELECT a.id, a.name, b.created_at, b.status_code
-                           FROM urls a LEFT JOIN (SELECT date(created_at)
-                           AS created_at, status_code, url_id FROM url_checks
-                           WHERE id IN (SELECT MAX(id) FROM url_checks
-                           GROUP BY url_id) ORDER BY url_id) AS b
-                           ON a.id=b.url_id ORDER BY a.id DESC""")
+            cursor.execute("""SELECT a.id, a.name,
+                            b.created_at, b.status_code FROM urls a
+                              LEFT JOIN (SELECT date(created_at)
+                                  AS created_at, status_code, url_id
+                                    FROM url_checks WHERE id IN
+                                      (SELECT MAX(id) FROM url_checks
+                                        GROUP BY url_id) ORDER BY url_id)
+                                          AS b ON a.id=b.url_id
+                                            ORDER BY a.id DESC""")
             answer = cursor.fetchall()
             return render_template("urls.html", answer=answer)
-
-
-def validate(form):
-    return urlsplit(form).scheme + "://"\
-        + urlsplit(form).netloc
 
 
 @app.route("/urls", methods=["POST"])
@@ -110,10 +95,6 @@ def urls_post():
 
 @app.route("/urls/<id>/checks", methods=["POST"])
 def url_id_check(id):
-    h1 = ""
-    title = ""
-    description = ""
-    current_date = datetime.now()
     with psycopg2.connect(URL) as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
@@ -125,19 +106,21 @@ def url_id_check(id):
                 res = requests.get(url_to_check)
                 res.raise_for_status()
                 soup = BeautifulSoup(res.text, 'html.parser')
-                try:
+                if soup.find(["h1"]) is not None:
                     h1 = ((soup.find(["h1"])).text).strip()
-                except AttributeError:
+                else:
                     h1 = ""
-                try:
-                    title = ((soup.find(["title"])).text).strip()
-                except AttributeError:
+                if soup.find(["title"]) is not None:
+                    title = ((soup.find(["title"])).text)
+                else:
                     title = ""
-                try:
+                if soup.find(
+                    "meta",
+                        {"name": "description"}) is not None:
                     description = (soup.find(
                         "meta",
-                        {"name": "description"}).attrs["content"]).strip()
-                except AttributeError:
+                        {"name": "description"}).attrs["content"])
+                else:
                     description = ""
             except requests.exceptions.RequestException:
                 flash("Произошла ошибка при проверке")
@@ -145,8 +128,8 @@ def url_id_check(id):
             cursor.execute(
                 """INSERT INTO url_checks (url_id, created_at, status_code, h1,
                         title, description)
-                            VALUES (%s,%s,%s,%s,%s,%s)""",
-                (id, current_date, res.status_code, h1, title, description),
+                            VALUES (%s,now(),%s,%s,%s,%s)""",
+                (id, res.status_code, h1, title, description),
             )
             flash("Страница успешно проверена", "success")
             return redirect(url_for("url_id", id=id))
@@ -161,12 +144,11 @@ def url_id(id):
                            (id,))
             result_urls = cursor.fetchone()
             fetched_url = result_urls.get("name")
-            date = result_urls.get("created_at").strftime("%Y-%m-%d")
+            date = result_urls.get("created_at")
+            print("date", date, type(date))
             cursor.execute("""SELECT id, status_code, created_at, h1,
                            title, description FROM url_checks
                             WHERE url_id = %s ORDER BY id DESC""", (id,))
             test_results = cursor.fetchall()
-            for i in test_results:
-                i["created_at"] = i.get("created_at").strftime("%Y-%m-%d")
         return render_template("url.html", url=fetched_url, date=date, id=id,
                                messages=messages, test_results=test_results)
