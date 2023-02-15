@@ -4,7 +4,6 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor, NamedTupleCursor
 from .validator import validate
 from bs4 import BeautifulSoup
-from itertools import zip_longest
 import psycopg2
 import os
 import validators
@@ -20,8 +19,8 @@ URL = os.getenv("DATABASE_URL")
 
 
 with open("database.sql", "r") as db:
-    for urls in db:
-        urls = urls
+    for url in db:
+        urls = url
         url_checks = next(db, None)
 
 try:
