@@ -100,21 +100,12 @@ def url_id_check(id):
                 res = requests.get(url_to_check)
                 res.raise_for_status()
                 soup = BeautifulSoup(res.text, 'html.parser')
-                if soup.find(["h1"]) is not None:
-                    h1 = ((soup.find(["h1"])).text)
-                else:
-                    h1 = ""
-                if soup.find(["title"]) is not None:
-                    title = ((soup.find(["title"])).text)
-                else:
-                    title = ""
-                if soup.find("meta",
-                             attrs={"name": "description"}) is not None:
-                    description = (soup.find("meta",
-                                             attrs={"name": "description"})
-                                   .attrs["content"])
-                else:
-                    description = ""
+                h1 = (soup.find(["h1"]))
+                h1 = h1.text if h1 else ""
+                title = soup.find(["title"])
+                title = title.text if title else ""
+                description = (soup.find("meta", {"name": "description"}))
+                description = description["content"] if description else ""
             except requests.exceptions.RequestException:
                 flash("Произошла ошибка при проверке", "danger")
                 return redirect(url_for("url_id", id=id))
