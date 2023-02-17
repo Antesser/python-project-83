@@ -62,7 +62,7 @@ def urls_post():
     form = request.form["url"]
     input = validate(form)
     if not validators.url(input):
-        flash("Некорректный URL", "error")
+        flash("Некорректный URL", "danger")
         messages = get_flashed_messages(with_categories=True)
         return render_template("index.html", messages=messages), 422
 
@@ -116,7 +116,7 @@ def url_id_check(id):
                 else:
                     description = ""
             except requests.exceptions.RequestException:
-                flash("Произошла ошибка при проверке")
+                flash("Произошла ошибка при проверке", "danger")
                 return redirect(url_for("url_id", id=id))
             cursor.execute(
                 """INSERT INTO url_checks (url_id, created_at, status_code, h1,
