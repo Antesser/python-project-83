@@ -18,17 +18,14 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 URL = os.getenv("DATABASE_URL")
 
 
-with open("database.sql", "r") as db:
-    for url in db:
-        urls = url
-        url_checks = next(db, None)
+with open("database.sql", "r") as init_script:
+    table_query = init_script.read()
 
 try:
     conn = psycopg2.connect(URL)
     print("Подключение установлено")
     with conn.cursor() as cursor:
-        cursor.execute(urls)
-        cursor.execute(url_checks)
+        cursor.execute(table_query)
 except (requests.exceptions.ConnectionError(), psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
 finally:
@@ -104,19 +101,18 @@ def url_id_check(id):
                 res.raise_for_status()
                 soup = BeautifulSoup(res.text, 'html.parser')
                 if soup.find(["h1"]) is not None:
-                    h1 = ((soup.find(["h1"])).text).strip()
+                    h1 = ((soup.find(["h1"])).text)
                 else:
                     h1 = ""
                 if soup.find(["title"]) is not None:
                     title = ((soup.find(["title"])).text)
                 else:
                     title = ""
-                if soup.find(
-                    "meta",
-                        {"name": "description"}) is not None:
-                    description = (soup.find(
-                        "meta",
-                        {"name": "description"}).attrs["content"])
+                if soup.find("meta",
+                             attrs={"name": "description"}) is not None:
+                    description = (soup.find("meta",
+                                             attrs={"name": "description"})
+                                   .attrs["content"])
                 else:
                     description = ""
             except requests.exceptions.RequestException:
