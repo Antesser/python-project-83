@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, get
 from dotenv import load_dotenv
 from datetime import datetime
 from psycopg2.extras import RealDictCursor, NamedTupleCursor
-from .validator import validate
-from bs4 import BeautifulSoup
+from .normalisator import normalise
+from .parser import parsing
 import psycopg2
 import os
 import validators
@@ -60,7 +60,7 @@ def urls_get():
 @app.route("/urls", methods=["POST"])
 def urls_post():
     form = request.form["url"]
-    input = validate(form)
+    input = normalise(form)
     if not validators.url(input):
         flash("Некорректный URL", "danger")
         messages = get_flashed_messages(with_categories=True)
@@ -99,16 +99,10 @@ def url_id_check(id):
             try:
                 res = requests.get(url_to_check)
                 res.raise_for_status()
-                soup = BeautifulSoup(res.text, 'html.parser')
-                h1 = (soup.find(["h1"]))
-                h1 = h1.text if h1 else ""
-                title = soup.find(["title"])
-                title = title.text if title else ""
-                description = (soup.find("meta", {"name": "description"}))
-                description = description["content"] if description else ""
             except requests.exceptions.RequestException:
                 flash("Произошла ошибка при проверке", "danger")
                 return redirect(url_for("url_id", id=id))
+            h1, title, description = parsing(res)
             cursor.execute(
                 """INSERT INTO url_checks (url_id, created_at, status_code, h1,
                         title, description)
